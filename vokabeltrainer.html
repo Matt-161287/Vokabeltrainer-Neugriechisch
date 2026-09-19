@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Karteikasten — Vokabeltrainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-subtle: #f2f6fb;
+    --bg-tint: #e7f0fa;
+    --navy: #12233f;
+    --blue-700: #1f4e8c;
+    --blue-600: #2b62ab;
+    --blue-500: #3e7cc0;
+    --blue-300: #9dc2e8;
+    --blue-200: #cfe1f5;
+    --blue-100: #e7f0fa;
+    --ink: #1b2430;
+    --ink-soft: #4c586b;
+    --good: #2e7d5b;
+    --good-bg: #e7f4ee;
+    --hard: #9a5a1f;
+    --hard-bg: #faf0e3;
+    --again: #a1402f;
+    --again-bg: #fbe9e6;
+    --line: #dbe6f3;
+    --shadow: 0 1px 2px rgba(18,35,63,0.06), 0 8px 24px rgba(18,35,63,0.06);
+    font-size: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  a { color: inherit; }
+
+  .app {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Header ---------- */
+  header.top {
+    padding: 36px 0 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .brand h1 {
+    font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.7rem;
+    color: var(--navy);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .brand .due-pill {
+    font-size: 0.85rem;
+    color: var(--blue-700);
+    background: var(--blue-100);
+    border: 1px solid var(--blue-200);
+    padding: 5px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  nav.tabs {
+    display: flex;
+    gap: 22px;
+    margin-top: 22px;
+  }
+
+  nav.tabs button {
+    background: none;
+    border: none;
+    padding: 6px 0 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  nav.tabs button:hover { color: var(--navy); }
+
+  nav.tabs button.active {
+    color: var(--blue-700);
+    border-bottom-color: var(--blue-600);
+    font-weight: 600;
+  }
+
+  /* ---------- Views ---------- */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---------- Study card ---------- */
+  .study-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 12px;
+  }
+
+  .progress-line {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 460px;
+    min-height: 260px;
+    background: var(--bg);
+    border: 1px solid var(--blue-200);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    position: relative;
+    padding: 30px 28px 26px;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 28px;
+    width: 46px;
+    height: 8px;
+    background: var(--blue-200);
+    border-radius: 0 0 5px 5px;
+  }
+
+  .card .direction {
+    font-size: 0.78rem;
+    color: var(--blue-600);
+    margin-bottom: auto;
+  }
+
+  .card .word-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 18px 0;
+    gap: 14px;
+  }
+
+  .card .front-word {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 2.1rem;
+    color: var(--navy);
+    line-height: 1.2;
+  }
+
+  .card .divider {
+    width: 34px;
+    height: 1px;
+    background: var(--blue-200);
+  }
+
+  .card .back-word {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.7rem;
+    color: var(--blue-700);
+    line-height: 1.25;
+  }
+
+  .card .example {
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    font-style: italic;
+    max-width: 360px;
+  }
+
+  .card .note {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    background: var(--bg-tint);
+    border-radius: 8px;
+    padding: 6px 10px;
+    max-width: 360px;
+  }
+
+  .card .hint {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--blue-500);
+    margin-top: 6px;
+  }
+
+  .rate-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 460px;
+    margin-top: 20px;
+  }
+
+  .rate-row button {
+    font-family: inherit;
+    font-size: 0.86rem;
+    padding: 11px 4px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition: transform 0.1s ease, background 0.15s ease;
+  }
+
+  .rate-row button .k { font-weight: 600; }
+  .rate-row button .d { font-size: 0.72rem; color: var(--ink-soft); }
+
+  .rate-row button:hover { transform: translateY(-1px); }
+
+  .rate-row button.again { border-color: #f0cec7; }
+  .rate-row button.again:hover { background: var(--again-bg); }
+  .rate-row button.hard { border-color: #f2ddbd; }
+  .rate-row button.hard:hover { background: var(--hard-bg); }
+  .rate-row button.good { border-color: var(--blue-200); }
+  .rate-row button.good:hover { background: var(--blue-100); }
+  .rate-row button.easy { border-color: #c7e3d3; }
+  .rate-row button.easy:hover { background: var(--good-bg); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+
+  .empty-state .big {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic;
+    font-size: 1.4rem;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+
+  .btn {
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--blue-600);
+    background: var(--blue-700);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .btn:hover { background: var(--blue-600); }
+
+  .btn.secondary {
+    background: var(--bg);
+    color: var(--blue-700);
+    border: 1px solid var(--blue-300);
+  }
+
+  .btn.secondary:hover { background: var(--blue-100); }
+
+  .btn.subtle {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+
+  .btn.subtle:hover { background: var(--bg-subtle); }
+
+  /* ---------- Manage view ---------- */
+  section.block {
+    margin-bottom: 34px;
+  }
+
+  section.block h2 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.15rem;
+    color: var(--navy);
+    margin: 0 0 4px;
+  }
+
+  section.block p.hint-text {
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+
+  textarea, input[type=text] {
+    width: 100%;
+    font-family: inherit;
+    font-size: 0.92rem;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 12px 14px;
+    background: var(--bg-subtle);
+    color: var(--ink);
+    resize: vertical;
+  }
+
+  textarea:focus, input[type=text]:focus {
+    outline: none;
+    border-color: var(--blue-500);
+    background: var(--bg);
+  }
+
+  textarea { min-height: 120px; line-height: 1.5; }
+
+  .form-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .add-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .add-grid input { grid-column: span 1; }
+
+  .import-msg {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--good);
+  }
+  .import-msg.err { color: var(--again); }
+
+  .word-list {
+    border-top: 1px solid var(--line);
+  }
+
+  .word-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .word-row .pair {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .word-row .pair .fb {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.05rem;
+    color: var(--navy);
+  }
+
+  .word-row .pair .fb .sep {
+    color: var(--blue-400, var(--blue-500));
+    margin: 0 8px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .word-row .pair .meta {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .word-row .status {
+    display: flex;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    padding-top: 4px;
+  }
+
+  .word-row .status span {
+    background: var(--bg-tint);
+    border-radius: 6px;
+    padding: 3px 7px;
+  }
+
+  .word-row .row-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 4px;
+  }
+
+  .word-row .del, .word-row .edit {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px 6px;
+    text-align: right;
+  }
+  .word-row .del:hover { color: var(--again); }
+  .word-row .edit:hover { color: var(--blue-700); }
+
+  .word-row.editing {
+    background: var(--bg-tint);
+    border-radius: 10px;
+    margin: 0 -10px;
+    padding: 14px 10px;
+  }
+
+  #addOneBtn.editing-active {
+    background: var(--good);
+    border-color: var(--good);
+  }
+
+  .empty-list {
+    padding: 30px 0;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+  }
+
+  /* ---------- Stats ---------- */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+
+  .stat-box {
+    background: var(--bg-subtle);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+
+  .stat-box .num {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.7rem;
+    color: var(--blue-700);
+  }
+
+  .stat-box .lbl {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+  }
+
+  .bar-row .bl { width: 108px; color: var(--ink-soft); flex-shrink: 0; }
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-tint);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--blue-500);
+    border-radius: 6px;
+  }
+  .bar-row .bn { width: 34px; text-align: right; color: var(--ink-soft); flex-shrink: 0; }
+
+  footer.reset {
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+  }
+
+  footer.reset button {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  @media (max-width: 480px) {
+    .brand h1 { font-size: 1.4rem; }
+    .card { padding: 24px 18px 20px; min-height: 230px; }
+    .card .front-word { font-size: 1.7rem; }
+    .card .back-word { font-size: 1.4rem; }
+    .rate-row { gap: 6px; }
+    .rate-row button { font-size: 0.76rem; padding: 9px 2px; }
+    .add-grid { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <h1>Karteikasten</h1>
+      <div class="due-pill" id="duePill">0 fällig</div>
+    </div>
+    <nav class="tabs">
+      <button data-view="lernen" class="active">Lernen</button>
+      <button data-view="vokabeln">Vokabeln</button>
+      <button data-view="statistik">Statistik</button>
+    </nav>
+  </header>
+
+  <!-- LERNEN -->
+  <div class="view active" id="view-lernen">
+    <div class="study-wrap" id="studyWrap"></div>
+  </div>
+
+  <!-- VOKABELN -->
+  <div class="view" id="view-vokabeln">
+
+    <section class="block">
+      <h2>Liste importieren</h2>
+      <p class="hint-text">Eine Vokabel pro Zeile: <code>Wort – Übersetzung</code>. Optional mit Notiz und Beispielsatz: <code>Wort – Übersetzung | Notiz | Beispielsatz</code></p>
+      <textarea id="importArea" placeholder="καλημέρα – guten Morgen&#10;ευχαριστώ – danke | informell | Ευχαριστώ πολύ για τη βοήθεια.&#10;σπίτι – Haus"></textarea>
+      <div class="form-row">
+        <button class="btn" id="importBtn">Importieren</button>
+        <button class="btn subtle" id="clearImportBtn">Feld leeren</button>
+      </div>
+      <div class="import-msg" id="importMsg"></div>
+    </section>
+
+    <section class="block">
+      <h2 id="addSectionTitle">Einzelne Vokabel hinzufügen</h2>
+      <div class="add-grid">
+        <input type="text" id="addFront" placeholder="Wort (Fremdsprache)">
+        <input type="text" id="addBack" placeholder="Übersetzung (Deutsch)">
+        <input type="text" id="addNote" placeholder="Notiz (optional)">
+        <input type="text" id="addExample" placeholder="Beispielsatz (optional)">
+      </div>
+      <div class="form-row">
+        <button class="btn secondary" id="addOneBtn">Hinzufügen</button>
+        <button class="btn subtle" id="cancelEditBtn" style="display:none;">Abbrechen</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Deine Vokabeln</h2>
+      <p class="hint-text" id="wordCountText"></p>
+      <div class="word-list" id="wordList"></div>
+    </section>
+
+    <footer class="reset">
+      <button id="resetBtn">Alle Vokabeln und Fortschritte löschen</button>
+    </footer>
+  </div>
+
+  <!-- STATISTIK -->
+  <div class="view" id="view-statistik">
+    <section class="block">
+      <h2>Überblick</h2>
+      <div class="stat-grid" id="statGrid"></div>
+    </section>
+    <section class="block">
+      <h2>Fortschritt nach Richtung</h2>
+      <div id="dirStats"></div>
+    </section>
+    <section class="block">
+      <h2>Reifegrad der Karten</h2>
+      <div id="maturityStats"></div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "karteikasten_data_v1";
+  var DAY_MS = 24 * 60 * 60 * 1000;
+
+  /* ---------- persistence ---------- */
+
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function addDays(dateStr, days) {
+    var d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function loadData() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.words)) return parsed;
+      }
+    } catch (e) { /* ignore, fall through to fresh state */ }
+    return { words: [] };
+  }
+
+  function saveData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn("Speichern fehlgeschlagen:", e);
+    }
+  }
+
+  var state = loadData();
+
+  /* ---------- word / progress helpers ---------- */
+
+  function freshProgress() {
+    return { ease: 2.5, interval: 0, reps: 0, due: todayStr() };
+  }
+
+  function ensureProgress(word) {
+    if (!word.f2b) word.f2b = freshProgress();
+    if (!word.b2f) word.b2f = freshProgress();
+  }
+
+  function makeId() {
+    return "w_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function addWord(front, back, note, example) {
+    front = (front || "").trim();
+    back = (back || "").trim();
+    if (!front || !back) return false;
+    var w = {
+      id: makeId(),
+      front: front,
+      back: back,
+      note: (note || "").trim(),
+      example: (example || "").trim(),
+      f2b: freshProgress(),
+      b2f: freshProgress()
+    };
+    state.words.push(w);
+    return true;
+  }
+
+  /* ---------- SM-2 style scheduling ---------- */
+  // rating: 0 again, 1 hard, 2 good, 3 easy
+  function schedule(prog, rating) {
+    if (rating === 0) {
+      prog.reps = 0;
+      prog.interval = 0;
+      prog.ease = Math.max(1.3, prog.ease - 0.2);
+      prog.due = todayStr(); // available again today (in-session relearning / tomorrow at latest)
+      return;
+    }
+    if (prog.reps === 0) {
+      prog.interval = 1;
+    } else if (prog.reps === 1) {
+      prog.interval = 6;
+    } else {
+      var mult = prog.ease;
+      if (rating === 1) mult = prog.ease * 0.7;
+      if (rating === 3) mult = prog.ease * 1.3;
+      prog.interval = Math.max(1, Math.round(prog.interval * mult));
+    }
+    prog.reps += 1;
+    if (rating === 1) prog.ease = Math.max(1.3, prog.ease - 0.15);
+    if (rating === 3) prog.ease = prog.ease + 0.15;
+    prog.due = addDays(todayStr(), prog.interval);
+  }
+
+  /* ---------- study session ---------- */
+
+  var session = { queue: [], pos: 0, revealed: false };
+
+  function buildQueue(includeNotDue) {
+    var today = todayStr();
+    var items = [];
+    state.words.forEach(function (w) {
+      ensureProgress(w);
+      if (includeNotDue || w.f2b.due <= today) items.push({ wordId: w.id, dir: "f2b" });
+      if (includeNotDue || w.b2f.due <= today) items.push({ wordId: w.id, dir: "b2f" });
+    });
+    for (var i = items.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = items[i]; items[i] = items[j]; items[j] = tmp;
+    }
+    return items;
+  }
+
+  function startSession(includeNotDue) {
+    session.queue = buildQueue(includeNotDue);
+    session.pos = 0;
+    session.revealed = false;
+    session.total = session.queue.length;
+    renderStudy();
+  }
+
+  function currentItem() {
+    if (session.pos >= session.queue.length) return null;
+    var it = session.queue[session.pos];
+    var word = state.words.find(function (w) { return w.id === it.wordId; });
+    if (!word) return null;
+    return { item: it, word: word };
+  }
+
+  function rate(rating) {
+    var cur = currentItem();
+    if (!cur) return;
+    var prog = cur.word[cur.item.dir];
+    var wasAgain = rating === 0;
+    schedule(prog, rating);
+    saveData();
+    if (wasAgain) {
+      // requeue near the end of the current session so it comes back around
+      var requeuePos = Math.min(session.queue.length, session.pos + 4);
+      session.queue.splice(requeuePos, 0, cur.item);
+    }
+    session.pos += 1;
+    session.revealed = false;
+    renderStudy();
+  }
+
+  function renderStudy() {
+    var wrap = document.getElementById("studyWrap");
+    var cur = currentItem();
+    updateDuePill();
+
+    if (!cur) {
+      var doneAny = session.total && session.total > 0;
+      wrap.innerHTML =
+        '<div class="empty-state">' +
+          '<div class="big">' + (doneAny ? "Für heute geschafft" : "Keine Karten fällig") + '</div>' +
+          '<p>' + (doneAny
+            ? "Du hast alle fälligen Vokabeln wiederholt. Komm morgen wieder, oder übe schon jetzt weiter."
+            : (state.words.length ? "Alle Vokabeln sind aktuell nicht fällig." : "Füge zuerst Vokabeln hinzu, um zu starten.")) +
+          '</p>' +
+          (state.words.length
+            ? '<button class="btn secondary" id="reviewAheadBtn" style="margin-top:14px;">Trotzdem üben</button>'
+            : '<button class="btn" id="goToVokabelnBtn" style="margin-top:14px;">Vokabeln hinzufügen</button>') +
+        '</div>';
+      var rb = document.getElementById("reviewAheadBtn");
+      if (rb) rb.addEventListener("click", function () { startSession(true); });
+      var gb = document.getElementById("goToVokabelnBtn");
+      if (gb) gb.addEventListener("click", function () { switchView("vokabeln"); });
+      return;
+    }
+
+    var w = cur.word;
+    var isF2b = cur.item.dir === "f2b";
+    var question = isF2b ? w.front : w.back;
+    var answer = isF2b ? w.back : w.front;
+    var dirLabel = isF2b ? "Fremdsprache → Deutsch" : "Deutsch → Fremdsprache";
+
+    var html = '';
+    html += '<div class="progress-line"><span>Karte ' + (session.pos + 1) + ' von ' + session.total + '</span><span>' + state.words.length + ' Vokabeln insgesamt</span></div>';
+    html += '<div class="card" id="flipCard">';
+    html += '<div class="direction">' + dirLabel + '</div>';
+    html += '<div class="word-zone">';
+    html += '<div class="front-word">' + escapeHtml(question) + '</div>';
+    if (session.revealed) {
+      html += '<div class="divider"></div>';
+      html += '<div class="back-word">' + escapeHtml(answer) + '</div>';
+      if (w.example) html += '<div class="example">„' + escapeHtml(w.example) + '"</div>';
+      if (w.note) html += '<div class="note">' + escapeHtml(w.note) + '</div>';
+    } else {
+      html += '<div class="hint">Karte antippen, um die Übersetzung zu zeigen</div>';
+    }
+    html += '</div></div>';
+
+    if (session.revealed) {
+      html += '<div class="rate-row">';
+      html += '<button class="again" data-r="0"><span class="k">Nochmal</span><span class="d">&lt; 10 Min.</span></button>';
+      html += '<button class="hard" data-r="1"><span class="k">Schwer</span><span class="d">kürzer</span></button>';
+      html += '<button class="good" data-r="2"><span class="k">Gut</span><span class="d">planmäßig</span></button>';
+      html += '<button class="easy" data-r="3"><span class="k">Leicht</span><span class="d">länger</span></button>';
+      html += '</div>';
+    }
+
+    wrap.innerHTML = html;
+
+    document.getElementById("flipCard").addEventListener("click", function () {
+      if (!session.revealed) {
+        session.revealed = true;
+        renderStudy();
+      }
+    });
+
+    if (session.revealed) {
+      wrap.querySelectorAll(".rate-row button").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          rate(parseInt(btn.getAttribute("data-r"), 10));
+        });
+      });
+    }
+  }
+
+  function updateDuePill() {
+    var today = todayStr();
+    var count = 0;
+    state.words.forEach(function (w) {
+      ensureProgress(w);
+      if (w.f2b.due <= today) count++;
+      if (w.b2f.due <= today) count++;
+    });
+    document.getElementById("duePill").textContent = count + (count === 1 ? " fällig" : " fällig");
+  }
+
+  /* ---------- import / manage ---------- */
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function parseImportLine(line) {
+    // split on | for note/example first
+    var parts = line.split("|");
+    var pairPart = parts[0];
+    var note = parts[1] ? parts[1].trim() : "";
+    var example = parts[2] ? parts[2].trim() : "";
+
+    var sep = null;
+    if (pairPart.indexOf("–") !== -1) sep = "–";
+    else if (pairPart.indexOf("-") !== -1) sep = "-";
+    else if (pairPart.indexOf("\t") !== -1) sep = "\t";
+    if (!sep) return null;
+
+    var idx = pairPart.indexOf(sep);
+    var front = pairPart.slice(0, idx).trim();
+    var back = pairPart.slice(idx + sep.length).trim();
+    if (!front || !back) return null;
+    return { front: front, back: back, note: note, example: example };
+  }
+
+  function runImport() {
+    var area = document.getElementById("importArea");
+    var lines = area.value.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+    var okCount = 0, failCount = 0;
+    lines.forEach(function (line) {
+      var parsed = parseImportLine(line);
+      if (parsed) {
+        addWord(parsed.front, parsed.back, parsed.note, parsed.example);
+        okCount++;
+      } else {
+        failCount++;
+      }
+    });
+    saveData();
+    var msg = document.getElementById("importMsg");
+    if (okCount === 0 && failCount === 0) {
+      msg.textContent = "";
+    } else if (failCount === 0) {
+      msg.className = "import-msg";
+      msg.textContent = okCount + " Vokabel(n) importiert.";
+      area.value = "";
+    } else {
+      msg.className = "import-msg err";
+      msg.textContent = okCount + " importiert, " + failCount + " Zeile(n) konnten nicht gelesen werden (Format: Wort – Übersetzung).";
+    }
+    renderAll();
+  }
+
+  function renderWordList() {
+    var list = document.getElementById("wordList");
+    var countText = document.getElementById("wordCountText");
+    countText.textContent = state.words.length
+      ? state.words.length + " Vokabel(n) im Karteikasten"
+      : "Noch keine Vokabeln vorhanden.";
+
+    if (!state.words.length) {
+      list.innerHTML = '<div class="empty-list">Importiere eine Liste oben, um loszulegen.</div>';
+      return;
+    }
+
+    var today = todayStr();
+    var html = "";
+    state.words.slice().reverse().forEach(function (w) {
+      ensureProgress(w);
+      var f2bDue = w.f2b.due <= today;
+      var b2fDue = w.b2f.due <= today;
+      html += '<div class="word-row" data-id="' + w.id + '">';
+      html += '<div class="pair">';
+      html += '<div class="fb">' + escapeHtml(w.front) + '<span class="sep">–</span>' + escapeHtml(w.back) + '</div>';
+      var metaBits = [];
+      if (w.note) metaBits.push(escapeHtml(w.note));
+      if (w.example) metaBits.push("„" + escapeHtml(w.example) + '"');
+      if (metaBits.length) html += '<div class="meta">' + metaBits.join(" · ") + '</div>';
+      html += '</div>';
+      html += '<div class="status">';
+      html += '<span>' + (f2bDue ? "F→D fällig" : "F→D in " + Math.max(0, dateDiffDays(today, w.f2b.due)) + " T.") + '</span>';
+      html += '<span>' + (b2fDue ? "D→F fällig" : "D→F in " + Math.max(0, dateDiffDays(today, w.b2f.due)) + " T.") + '</span>';
+      html += '</div>';
+      html += '<div class="row-actions">';
+      html += '<button class="edit" title="Bearbeiten" data-id="' + w.id + '">Bearbeiten</button>';
+      html += '<button class="del" title="Löschen" data-id="' + w.id + '">Löschen</button>';
+      html += '</div>';
+      html += '</div>';
+    });
+    list.innerHTML = html;
+
+    list.querySelectorAll(".del").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-id");
+        var w = state.words.find(function (x) { return x.id === id; });
+        var label = w ? (w.front + " – " + w.back) : "diese Vokabel";
+        if (confirm('„' + label + '" wirklich löschen? Der Lernfortschritt dieser Karte geht dabei verloren.')) {
+          state.words = state.words.filter(function (w) { return w.id !== id; });
+          if (editWordId === id) cancelEdit();
+          saveData();
+          renderAll();
+        }
+      });
+    });
+
+    list.querySelectorAll(".edit").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-id");
+        startEdit(id);
+      });
+    });
+  }
+
+  /* ---------- edit existing word ---------- */
+
+  var editWordId = null;
+
+  function startEdit(id) {
+    var w = state.words.find(function (x) { return x.id === id; });
+    if (!w) return;
+    editWordId = id;
+    document.getElementById("addFront").value = w.front;
+    document.getElementById("addBack").value = w.back;
+    document.getElementById("addNote").value = w.note || "";
+    document.getElementById("addExample").value = w.example || "";
+    document.getElementById("addSectionTitle").textContent = "Vokabel bearbeiten";
+    document.getElementById("addOneBtn").textContent = "Änderungen speichern";
+    document.getElementById("addOneBtn").classList.add("editing-active");
+    document.getElementById("cancelEditBtn").style.display = "inline-block";
+    document.getElementById("addFront").scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById("addFront").focus();
+  }
+
+  function cancelEdit() {
+    editWordId = null;
+    ["addFront", "addBack", "addNote", "addExample"].forEach(function (id) {
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("addSectionTitle").textContent = "Einzelne Vokabel hinzufügen";
+    document.getElementById("addOneBtn").textContent = "Hinzufügen";
+    document.getElementById("addOneBtn").classList.remove("editing-active");
+    document.getElementById("cancelEditBtn").style.display = "none";
+  }
+
+  function dateDiffDays(a, b) {
+    var da = new Date(a + "T00:00:00");
+    var db = new Date(b + "T00:00:00");
+    return Math.round((db - da) / DAY_MS);
+  }
+
+  /* ---------- stats ---------- */
+
+  function renderStats() {
+    var today = todayStr();
+    var total = state.words.length;
+    var dueCount = 0, matureCount = 0, newCount = 0;
+
+    state.words.forEach(function (w) {
+      ensureProgress(w);
+      [w.f2b, w.b2f].forEach(function (p) {
+        if (p.due <= today) dueCount++;
+        if (p.reps === 0) newCount++;
+        if (p.interval >= 21) matureCount++;
+      });
+    });
+
+    var statGrid = document.getElementById("statGrid");
+    statGrid.innerHTML =
+      statBox(total, "Vokabeln") +
+      statBox(dueCount, "Karten fällig") +
+      statBox(matureCount, "gefestigt");
+
+    var f2bDue = 0, b2fDue = 0, f2bMature = 0, b2fMature = 0;
+    state.words.forEach(function (w) {
+      if (w.f2b.due <= today) f2bDue++;
+      if (w.b2f.due <= today) b2fDue++;
+      if (w.f2b.interval >= 21) f2bMature++;
+      if (w.b2f.interval >= 21) b2fMature++;
+    });
+
+    var dirStats = document.getElementById("dirStats");
+    dirStats.innerHTML =
+      barRow("Fremdsprache → Deutsch", f2bMature, total || 1) +
+      barRow("Deutsch → Fremdsprache", b2fMature, total || 1);
+
+    var maturityStats = document.getElementById("maturityStats");
+    maturityStats.innerHTML =
+      barRow("Neu", newCount, (total * 2) || 1) +
+      barRow("In Wiederholung", (total * 2) - newCount - matureCount, (total * 2) || 1) +
+      barRow("Gefestigt (≥ 21 Tage)", matureCount, (total * 2) || 1);
+  }
+
+  function statBox(num, label) {
+    return '<div class="stat-box"><div class="num">' + num + '</div><div class="lbl">' + label + '</div></div>';
+  }
+
+  function barRow(label, value, max) {
+    var pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+    return '<div class="bar-row"><div class="bl">' + label + '</div><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div><div class="bn">' + value + '</div></div>';
+  }
+
+  /* ---------- view switching ---------- */
+
+  function switchView(name) {
+    document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
+    document.getElementById("view-" + name).classList.add("active");
+    document.querySelectorAll("nav.tabs button").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-view") === name);
+    });
+    if (name === "lernen") startSession(false);
+    if (name === "vokabeln") renderWordList();
+    if (name === "statistik") renderStats();
+  }
+
+  function renderAll() {
+    updateDuePill();
+    renderWordList();
+    renderStats();
+  }
+
+  /* ---------- wiring ---------- */
+
+  document.querySelectorAll("nav.tabs button").forEach(function (btn) {
+    btn.addEventListener("click", function () { switchView(btn.getAttribute("data-view")); });
+  });
+
+  document.getElementById("importBtn").addEventListener("click", runImport);
+  document.getElementById("clearImportBtn").addEventListener("click", function () {
+    document.getElementById("importArea").value = "";
+    document.getElementById("importMsg").textContent = "";
+  });
+
+  document.getElementById("addOneBtn").addEventListener("click", function () {
+    var front = document.getElementById("addFront").value.trim();
+    var back = document.getElementById("addBack").value.trim();
+    var note = document.getElementById("addNote").value.trim();
+    var example = document.getElementById("addExample").value.trim();
+    if (!front || !back) return;
+
+    if (editWordId) {
+      var w = state.words.find(function (x) { return x.id === editWordId; });
+      if (w) {
+        w.front = front;
+        w.back = back;
+        w.note = note;
+        w.example = example;
+        saveData();
+      }
+      cancelEdit();
+      renderAll();
+      return;
+    }
+
+    if (addWord(front, back, note, example)) {
+      saveData();
+      ["addFront", "addBack", "addNote", "addExample"].forEach(function (id) {
+        document.getElementById(id).value = "";
+      });
+      renderAll();
+    }
+  });
+
+  document.getElementById("cancelEditBtn").addEventListener("click", cancelEdit);
+
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    var count = state.words.length;
+    if (!count) return;
+    if (confirm("Wirklich alle " + count + " Vokabeln und den gesamten Lernfortschritt löschen? Das kann nicht rückgängig gemacht werden.")) {
+      state.words = [];
+      editWordId = null;
+      saveData();
+      renderAll();
+      startSession(false);
+    }
+  });
+
+  /* ---------- init ---------- */
+
+  state.words.forEach(ensureProgress);
+  renderAll();
+  startSession(false);
+
+})();
+</script>
+</body>
+</html>
