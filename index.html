@@ -175,7 +175,51 @@
   .card .direction {
     font-size: 0.78rem;
     color: var(--blue-600);
-    margin-bottom: auto;
+  }
+
+  .card .card-top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .card .card-actions {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .card .card-actions button {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.76rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+  }
+
+  .card .card-actions button:hover { color: var(--blue-700); }
+  .card .card-actions button.danger:hover { color: var(--again); }
+
+  .study-edit-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 6px 0 4px;
+  }
+
+  .study-edit-fields input {
+    background: var(--bg);
+  }
+
+  .study-edit-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 4px;
   }
 
   .card .word-zone {
@@ -838,7 +882,7 @@
 
   /* ---------- study session ---------- */
 
-  var session = { queue: [], pos: 0, revealed: false };
+  var session = { queue: [], pos: 0, revealed: false, editing: false };
 
   function buildQueue(includeNotDue) {
     var today = todayStr();
@@ -859,6 +903,7 @@
     session.queue = buildQueue(includeNotDue);
     session.pos = 0;
     session.revealed = false;
+    session.editing = false;
     session.total = session.queue.length;
     renderStudy();
   }
@@ -888,12 +933,70 @@
     renderStudy();
   }
 
+  function deleteStudyWord() {
+    var cur = currentItem();
+    if (!cur) return;
+    var w = cur.word;
+    var label = w.front + " – " + w.back;
+    if (!confirm('„' + label + '" wirklich löschen? Der gesamte Lernfortschritt dieser Karte geht dabei verloren.')) return;
+
+    var id = w.id;
+    state.words = state.words.filter(function (x) { return x.id !== id; });
+    saveData();
+
+    var removedBefore = 0;
+    var newQueue = [];
+    for (var i = 0; i < session.queue.length; i++) {
+      if (session.queue[i].wordId === id) {
+        if (i < session.pos) removedBefore++;
+        continue;
+      }
+      newQueue.push(session.queue[i]);
+    }
+    var removedTotal = (session.queue.length - newQueue.length);
+    session.queue = newQueue;
+    session.pos = Math.max(0, session.pos - removedBefore);
+    session.total = Math.max(0, session.total - removedTotal);
+    session.revealed = false;
+    session.editing = false;
+    renderStudy();
+  }
+
+  function startStudyEdit() {
+    session.editing = true;
+    renderStudy();
+  }
+
+  function cancelStudyEdit() {
+    session.editing = false;
+    renderStudy();
+  }
+
+  function saveStudyEdit() {
+    var cur = currentItem();
+    if (!cur) return;
+    var front = document.getElementById("studyEditFront").value.trim();
+    var back = document.getElementById("studyEditBack").value.trim();
+    var note = document.getElementById("studyEditNote").value.trim();
+    var example = document.getElementById("studyEditExample").value.trim();
+    if (!front || !back) return;
+    cur.word.front = front;
+    cur.word.back = back;
+    cur.word.note = note;
+    cur.word.example = example;
+    saveData();
+    session.editing = false;
+    renderStudy();
+    renderWordList();
+  }
+
   function renderStudy() {
     var wrap = document.getElementById("studyWrap");
     var cur = currentItem();
     updateDuePill();
 
     if (!cur) {
+      session.editing = false;
       var doneAny = session.total && session.total > 0;
       wrap.innerHTML =
         '<div class="empty-state">' +
@@ -922,20 +1025,43 @@
     var html = '';
     html += '<div class="progress-line"><span>Karte ' + (session.pos + 1) + ' von ' + session.total + '</span><span>' + state.words.length + ' Vokabeln insgesamt</span></div>';
     html += '<div class="card" id="flipCard">';
+    html += '<div class="card-top-row">';
     html += '<div class="direction">' + dirLabel + '</div>';
-    html += '<div class="word-zone">';
-    html += '<div class="front-word">' + escapeHtml(question) + '</div>';
-    if (session.revealed) {
-      html += '<div class="divider"></div>';
-      html += '<div class="back-word">' + escapeHtml(answer) + '</div>';
-      if (w.example) html += '<div class="example">„' + escapeHtml(w.example) + '"</div>';
-      if (w.note) html += '<div class="note">' + escapeHtml(w.note) + '</div>';
-    } else {
-      html += '<div class="hint">Karte antippen, um die Übersetzung zu zeigen</div>';
+    if (!session.editing) {
+      html += '<div class="card-actions">';
+      html += '<button id="studyEditBtn" type="button">Bearbeiten</button>';
+      html += '<button id="studyDeleteBtn" type="button" class="danger">Löschen</button>';
+      html += '</div>';
     }
-    html += '</div></div>';
+    html += '</div>';
 
-    if (session.revealed) {
+    if (session.editing) {
+      html += '<div class="study-edit-fields">';
+      html += '<input type="text" id="studyEditFront" placeholder="Wort (Fremdsprache)" value="' + escapeHtml(w.front) + '">';
+      html += '<input type="text" id="studyEditBack" placeholder="Übersetzung (Deutsch)" value="' + escapeHtml(w.back) + '">';
+      html += '<input type="text" id="studyEditNote" placeholder="Notiz (optional)" value="' + escapeHtml(w.note || "") + '">';
+      html += '<input type="text" id="studyEditExample" placeholder="Beispielsatz (optional)" value="' + escapeHtml(w.example || "") + '">';
+      html += '</div>';
+      html += '<div class="study-edit-actions">';
+      html += '<button class="btn secondary" id="studyEditSave" type="button">Speichern</button>';
+      html += '<button class="btn subtle" id="studyEditCancel" type="button">Abbrechen</button>';
+      html += '</div>';
+    } else {
+      html += '<div class="word-zone">';
+      html += '<div class="front-word">' + escapeHtml(question) + '</div>';
+      if (session.revealed) {
+        html += '<div class="divider"></div>';
+        html += '<div class="back-word">' + escapeHtml(answer) + '</div>';
+        if (w.example) html += '<div class="example">„' + escapeHtml(w.example) + '"</div>';
+        if (w.note) html += '<div class="note">' + escapeHtml(w.note) + '</div>';
+      } else {
+        html += '<div class="hint">Karte antippen, um die Übersetzung zu zeigen</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+
+    if (session.revealed && !session.editing) {
       html += '<div class="rate-row">';
       html += '<button class="again" data-r="0"><span class="k">Nochmal</span><span class="d">&lt; 10 Min.</span></button>';
       html += '<button class="hard" data-r="1"><span class="k">Schwer</span><span class="d">kürzer</span></button>';
@@ -946,20 +1072,35 @@
 
     wrap.innerHTML = html;
 
-    document.getElementById("flipCard").addEventListener("click", function () {
-      if (!session.revealed) {
-        session.revealed = true;
-        renderStudy();
-      }
-    });
-
-    if (session.revealed) {
-      wrap.querySelectorAll(".rate-row button").forEach(function (btn) {
-        btn.addEventListener("click", function (e) {
-          e.stopPropagation();
-          rate(parseInt(btn.getAttribute("data-r"), 10));
-        });
+    if (!session.editing) {
+      document.getElementById("flipCard").addEventListener("click", function (e) {
+        if (e.target.closest(".card-actions")) return;
+        if (!session.revealed) {
+          session.revealed = true;
+          renderStudy();
+        }
       });
+
+      document.getElementById("studyEditBtn").addEventListener("click", function (e) {
+        e.stopPropagation();
+        startStudyEdit();
+      });
+      document.getElementById("studyDeleteBtn").addEventListener("click", function (e) {
+        e.stopPropagation();
+        deleteStudyWord();
+      });
+
+      if (session.revealed) {
+        wrap.querySelectorAll(".rate-row button").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            rate(parseInt(btn.getAttribute("data-r"), 10));
+          });
+        });
+      }
+    } else {
+      document.getElementById("studyEditSave").addEventListener("click", saveStudyEdit);
+      document.getElementById("studyEditCancel").addEventListener("click", cancelStudyEdit);
     }
   }
 
