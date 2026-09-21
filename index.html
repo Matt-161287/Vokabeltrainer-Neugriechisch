@@ -413,6 +413,28 @@
 
   .add-grid input { grid-column: span 1; }
 
+  .dir-checkboxes {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .dir-checkboxes label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  .dir-checkboxes input[type="checkbox"] {
+    width: auto;
+    accent-color: var(--blue-600);
+    cursor: pointer;
+  }
+
   .import-msg {
     margin-top: 10px;
     font-size: 0.85rem;
@@ -710,6 +732,10 @@
         <input type="text" id="addNote" placeholder="Notiz (optional)">
         <input type="text" id="addExample" placeholder="Beispielsatz (optional)">
       </div>
+      <div class="dir-checkboxes">
+        <label><input type="checkbox" id="addDirF2b" checked> Fremdsprache → Deutsch abfragen</label>
+        <label><input type="checkbox" id="addDirB2f" checked> Deutsch → Fremdsprache abfragen</label>
+      </div>
       <div class="form-row">
         <button class="btn secondary" id="addOneBtn">Hinzufügen</button>
         <button class="btn subtle" id="cancelEditBtn" style="display:none;">Abbrechen</button>
@@ -754,12 +780,12 @@
      (aus Projekteinstellungen -> Deine Apps -> Web-App)
      ========================================================= */
   var firebaseConfig = {
-    apiKey: "AIzaSyB1wZ7YJH6L2mzNtNtc_ngQ46URstjI9YY",
-  authDomain: "vokabeltrainer-neugriechisch.firebaseapp.com",
-  projectId: "vokabeltrainer-neugriechisch",
-  storageBucket: "vokabeltrainer-neugriechisch.firebasestorage.app",
-  messagingSenderId: "271979164035",
-  appId: "1:271979164035:web:342a9818bb23827e7e86b6"
+    apiKey: "DEIN-API-KEY",
+    authDomain: "DEIN-PROJEKT.firebaseapp.com",
+    projectId: "DEIN-PROJEKT",
+    storageBucket: "DEIN-PROJEKT.appspot.com",
+    messagingSenderId: "DEINE-SENDER-ID",
+    appId: "DEINE-APP-ID"
   };
   /* ========================================================= */
 
@@ -831,13 +857,15 @@
   function ensureProgress(word) {
     if (!word.f2b) word.f2b = freshProgress();
     if (!word.b2f) word.b2f = freshProgress();
+    if (typeof word.dirF2b !== "boolean") word.dirF2b = true;
+    if (typeof word.dirB2f !== "boolean") word.dirB2f = true;
   }
 
   function makeId() {
     return "w_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
   }
 
-  function addWord(front, back, note, example) {
+  function addWord(front, back, note, example, dirF2b, dirB2f) {
     front = (front || "").trim();
     back = (back || "").trim();
     if (!front || !back) return false;
@@ -847,6 +875,8 @@
       back: back,
       note: (note || "").trim(),
       example: (example || "").trim(),
+      dirF2b: dirF2b !== false,
+      dirB2f: dirB2f !== false,
       f2b: freshProgress(),
       b2f: freshProgress()
     };
@@ -889,8 +919,8 @@
     var items = [];
     state.words.forEach(function (w) {
       ensureProgress(w);
-      if (includeNotDue || w.f2b.due <= today) items.push({ wordId: w.id, dir: "f2b" });
-      if (includeNotDue || w.b2f.due <= today) items.push({ wordId: w.id, dir: "b2f" });
+      if (w.dirF2b && (includeNotDue || w.f2b.due <= today)) items.push({ wordId: w.id, dir: "f2b" });
+      if (w.dirB2f && (includeNotDue || w.b2f.due <= today)) items.push({ wordId: w.id, dir: "b2f" });
     });
     for (var i = items.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -979,12 +1009,35 @@
     var back = document.getElementById("studyEditBack").value.trim();
     var note = document.getElementById("studyEditNote").value.trim();
     var example = document.getElementById("studyEditExample").value.trim();
+    var dirF2b = document.getElementById("studyEditDirF2b").checked;
+    var dirB2f = document.getElementById("studyEditDirB2f").checked;
     if (!front || !back) return;
     cur.word.front = front;
     cur.word.back = back;
     cur.word.note = note;
     cur.word.example = example;
+    cur.word.dirF2b = dirF2b;
+    cur.word.dirB2f = dirB2f;
     saveData();
+
+    // laufende Warteschlange bereinigen, falls eine Richtung gerade deaktiviert wurde
+    var id = cur.word.id;
+    var removedBefore = 0;
+    var newQueue = [];
+    for (var i = 0; i < session.queue.length; i++) {
+      var it = session.queue[i];
+      var stillActive = it.wordId !== id || (it.dir === "f2b" ? dirF2b : dirB2f);
+      if (!stillActive) {
+        if (i < session.pos) removedBefore++;
+        if (i === session.pos) { /* aktuelle Karte selbst wird unten neu behandelt */ }
+        continue;
+      }
+      newQueue.push(it);
+    }
+    var removedTotal = session.queue.length - newQueue.length;
+    session.queue = newQueue;
+    session.pos = Math.max(0, session.pos - removedBefore);
+    session.total = Math.max(0, session.total - removedTotal);
     session.editing = false;
     renderStudy();
     renderWordList();
@@ -1041,6 +1094,10 @@
       html += '<input type="text" id="studyEditBack" placeholder="Übersetzung (Deutsch)" value="' + escapeHtml(w.back) + '">';
       html += '<input type="text" id="studyEditNote" placeholder="Notiz (optional)" value="' + escapeHtml(w.note || "") + '">';
       html += '<input type="text" id="studyEditExample" placeholder="Beispielsatz (optional)" value="' + escapeHtml(w.example || "") + '">';
+      html += '</div>';
+      html += '<div class="dir-checkboxes" style="justify-content:center;">';
+      html += '<label><input type="checkbox" id="studyEditDirF2b"' + (w.dirF2b !== false ? ' checked' : '') + '> Fremdsprache → Deutsch</label>';
+      html += '<label><input type="checkbox" id="studyEditDirB2f"' + (w.dirB2f !== false ? ' checked' : '') + '> Deutsch → Fremdsprache</label>';
       html += '</div>';
       html += '<div class="study-edit-actions">';
       html += '<button class="btn secondary" id="studyEditSave" type="button">Speichern</button>';
@@ -1198,8 +1255,8 @@
       if (metaBits.length) html += '<div class="meta">' + metaBits.join(" · ") + '</div>';
       html += '</div>';
       html += '<div class="status">';
-      html += '<span>' + (f2bDue ? "F→D fällig" : "F→D in " + Math.max(0, dateDiffDays(today, w.f2b.due)) + " T.") + '</span>';
-      html += '<span>' + (b2fDue ? "D→F fällig" : "D→F in " + Math.max(0, dateDiffDays(today, w.b2f.due)) + " T.") + '</span>';
+      html += '<span>' + (!w.dirF2b ? "F→D deaktiviert" : (f2bDue ? "F→D fällig" : "F→D in " + Math.max(0, dateDiffDays(today, w.f2b.due)) + " T.")) + '</span>';
+      html += '<span>' + (!w.dirB2f ? "D→F deaktiviert" : (b2fDue ? "D→F fällig" : "D→F in " + Math.max(0, dateDiffDays(today, w.b2f.due)) + " T.")) + '</span>';
       html += '</div>';
       html += '<div class="row-actions">';
       html += '<button class="edit" title="Bearbeiten" data-id="' + w.id + '">Bearbeiten</button>';
@@ -1243,6 +1300,8 @@
     document.getElementById("addBack").value = w.back;
     document.getElementById("addNote").value = w.note || "";
     document.getElementById("addExample").value = w.example || "";
+    document.getElementById("addDirF2b").checked = w.dirF2b !== false;
+    document.getElementById("addDirB2f").checked = w.dirB2f !== false;
     document.getElementById("addSectionTitle").textContent = "Vokabel bearbeiten";
     document.getElementById("addOneBtn").textContent = "Änderungen speichern";
     document.getElementById("addOneBtn").classList.add("editing-active");
@@ -1256,6 +1315,8 @@
     ["addFront", "addBack", "addNote", "addExample"].forEach(function (id) {
       document.getElementById(id).value = "";
     });
+    document.getElementById("addDirF2b").checked = true;
+    document.getElementById("addDirB2f").checked = true;
     document.getElementById("addSectionTitle").textContent = "Einzelne Vokabel hinzufügen";
     document.getElementById("addOneBtn").textContent = "Hinzufügen";
     document.getElementById("addOneBtn").classList.remove("editing-active");
@@ -1355,6 +1416,8 @@
     var back = document.getElementById("addBack").value.trim();
     var note = document.getElementById("addNote").value.trim();
     var example = document.getElementById("addExample").value.trim();
+    var dirF2b = document.getElementById("addDirF2b").checked;
+    var dirB2f = document.getElementById("addDirB2f").checked;
     if (!front || !back) return;
 
     if (editWordId) {
@@ -1364,6 +1427,8 @@
         w.back = back;
         w.note = note;
         w.example = example;
+        w.dirF2b = dirF2b;
+        w.dirB2f = dirB2f;
         saveData();
       }
       cancelEdit();
@@ -1371,11 +1436,13 @@
       return;
     }
 
-    if (addWord(front, back, note, example)) {
+    if (addWord(front, back, note, example, dirF2b, dirB2f)) {
       saveData();
       ["addFront", "addBack", "addNote", "addExample"].forEach(function (id) {
         document.getElementById(id).value = "";
       });
+      document.getElementById("addDirF2b").checked = true;
+      document.getElementById("addDirB2f").checked = true;
       renderAll();
     }
   });
